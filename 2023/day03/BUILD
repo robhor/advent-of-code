@@ -2,7 +2,7 @@ cc_library(
     name = "day03-lib",
     hdrs = ["day03.cc"],
     deps = [
-        "@com_google_absl//absl/strings",
+        "@abseil-cpp//absl/strings",
     ],
 )
 
@@ -21,6 +21,6 @@ cc_test(
     srcs = ["day03_test.cc"],
     deps = [
         ":day03-lib",
-        "@com_google_googletest//:gtest_main",
+        "@googletest//:gtest_main",
     ],
 )

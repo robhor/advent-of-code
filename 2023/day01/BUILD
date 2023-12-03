@@ -17,6 +17,6 @@ cc_test(
     srcs = ["day01_test.cc"],
     deps = [
         ":day01-lib",
-        "@com_google_googletest//:gtest_main",
+        "@googletest//:gtest_main",
     ],
 )
