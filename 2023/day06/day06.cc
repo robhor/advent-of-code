@@ -18,8 +18,8 @@ namespace AOC {
 namespace day06 {
 
 struct Race {
-  int time;
-  int distance;
+  int64_t time;
+  int64_t distance;
 };
 
 std::vector<Race> parse_input(std::basic_istream<char>& in) {
@@ -60,8 +60,28 @@ int64_t part1(std::basic_istream<char>& in) {
   return product;
 }
 
+Race parse_as_single_race(std::basic_istream<char>& in) {
+  Race result;
+  std::string line;
+  
+  std::getline(in, line);
+  constexpr int prefix_length = std::string("Distance:").length();
+  std::string time = line.substr(prefix_length);
+  time.erase(std::remove(time.begin(), time.end(), ' '), time.end());
+
+  std::getline(in, line);
+  std::string distance = line.substr(prefix_length);
+  distance.erase(std::remove(distance.begin(), distance.end(), ' '), distance.end());
+
+  absl::SimpleAtoi(time, &result.time);
+  absl::SimpleAtoi(distance, &result.distance);
+
+  return result;
+}
+
 int64_t part2(std::basic_istream<char>& in) {
-  return 0;
+  Race race = parse_as_single_race(in);
+  return ways_to_win(race);
 }
 
 }  // namespace day06

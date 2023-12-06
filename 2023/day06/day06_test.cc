@@ -34,9 +34,16 @@ TEST(day06, Part1) {
   EXPECT_EQ(AOC::day06::part1(iss), 288);
 }
 
+TEST(day06, ParseInput2) {
+  std::istringstream iss(example_input);
+  AOC::day06::Race input = AOC::day06::parse_as_single_race(iss);
+  EXPECT_EQ(input.time, 71530);
+  EXPECT_EQ(input.distance, 940200);
+}
+
 TEST(day06, Part2) {
   std::istringstream iss(example_input);
-  EXPECT_EQ(AOC::day06::part2(iss), 0);
+  EXPECT_EQ(AOC::day06::part2(iss), 71503);
 }
 
 }  // namespace
