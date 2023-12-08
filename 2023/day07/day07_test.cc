@@ -67,9 +67,19 @@ TEST(day07, Part1) {
   EXPECT_EQ(AOC::day07::part1(iss), 6440);
 }
 
+TEST(day07, KindWithJoker) {
+  EXPECT_EQ(kind_with_joker(parse_hand("AAAAA")), FIVE_OF_A_KIND);
+  EXPECT_EQ(kind_with_joker(parse_hand("AAAJA")), FIVE_OF_A_KIND);
+  EXPECT_EQ(kind_with_joker(parse_hand("AJAJA")), FIVE_OF_A_KIND);
+  EXPECT_EQ(kind_with_joker(parse_hand("AJTJA")), FOUR_OF_A_KIND);
+  EXPECT_EQ(kind_with_joker(parse_hand("QJJQ2")), FOUR_OF_A_KIND);
+  EXPECT_EQ(kind_with_joker(parse_hand("2345J")), ONE_PAIR);
+  EXPECT_EQ(kind_with_joker(parse_hand("JJJJJ")), FIVE_OF_A_KIND);
+}
+
 TEST(day07, Part2) {
   std::istringstream iss(example_input);
-  EXPECT_EQ(AOC::day07::part2(iss), 0);
+  EXPECT_EQ(AOC::day07::part2(iss), 5905);
 }
 
 }  // namespace

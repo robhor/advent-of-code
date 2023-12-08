@@ -19,6 +19,7 @@ namespace AOC {
 namespace day07 {
 
 const int HAND_SIZE = 5;
+const int JOKER = 11;
 typedef std::array<int, HAND_SIZE> Hand;
 
 enum HandKind {
@@ -36,12 +37,22 @@ struct HandBid {
   int bid;
 };
 
-HandKind kind_of(Hand hand) {
-  std::map<char, int> card_occurences;
-  std::vector<int> card_counts;
+HandKind kind_of(Hand hand, bool with_joker = false) {
+  std::map<int, int> card_occurences;
   for (char card : hand) {
     card_occurences[card]++;
   }
+  if (with_joker && card_occurences.contains(JOKER)) {
+    int jokers = card_occurences[JOKER];
+    if (jokers == 5) return FIVE_OF_A_KIND;
+    card_occurences.erase(JOKER);
+    auto max_value_card = std::max_element(card_occurences.begin(), card_occurences.end(), [](std::pair<int, int> a, std::pair<int, int> b){
+      if (a.second == b.second) return a.first < b.first;
+      return a.second < b.second;
+    });
+    max_value_card->second += jokers;
+  }
+  std::vector<int> card_counts;
   for (const auto& elem : card_occurences) {
     card_counts.push_back(elem.second);
   }
@@ -70,23 +81,24 @@ HandKind kind_of(Hand hand) {
 }
 
 // Returns true if [first] is stronger than [second]
-bool is_stronger_than(const Hand& first, const Hand& second) {
+bool is_stronger_than(const Hand& first, const Hand& second, bool with_joker = false) {
+  if (kind_of(first, with_joker) > kind_of(second, with_joker)) return true;
+  if (kind_of(first, with_joker) < kind_of(second, with_joker)) return false;
 
-  // return std::tie(kind_of(first), first[0], first[1], first[2], first[3], first[4]) <
-  //        std::tie(kind_of(second), second[0], second[1], second[2], second[3], second[4]);
-
-  if (kind_of(first) > kind_of(second)) return true;
-  if (kind_of(first) < kind_of(second)) return false;
-
+  auto card_value = [with_joker](int card) {
+    if (with_joker && card == JOKER) return 1;
+    return card;
+  };
+  
   for (int i = 0; i < HAND_SIZE; i++) {
     if (first[i] == second[i]) continue;
-    return first[i] > second[i];
+    return card_value(first[i]) > card_value(second[i]);
   }
 
   return false;
 }
 
-int strengh_of_card(char card) {
+constexpr int strengh_of_card(char card) {
   switch (card) {
     case '2': return 2;
     case '3': return 3;
@@ -104,6 +116,7 @@ int strengh_of_card(char card) {
   }
   assert(false && "Invalid card");
 }
+static_assert(strengh_of_card('J') == JOKER);
 
 Hand parse_hand(absl::string_view hand) {
   return Hand {
@@ -127,8 +140,8 @@ std::vector<HandBid> parse_input(std::basic_istream<char>& in) {
   return result;
 }
 
-void rank_hands(std::vector<HandBid>& hand_bids) {
-  std::sort(hand_bids.begin(), hand_bids.end(), [](const HandBid& a, const HandBid& b) { return is_stronger_than(b.hand, a.hand); });
+void rank_hands(std::vector<HandBid>& hand_bids, bool with_joker = false) {
+  std::sort(hand_bids.begin(), hand_bids.end(), [with_joker](const HandBid& a, const HandBid& b) { return is_stronger_than(b.hand, a.hand, with_joker); });
 }
 
 int64_t part1(std::basic_istream<char>& in) {
@@ -145,8 +158,22 @@ int64_t part1(std::basic_istream<char>& in) {
   return solution;
 }
 
+HandKind kind_with_joker(Hand hand) {
+  return kind_of(hand, /* with_joker= */ true);
+}
+
 int64_t part2(std::basic_istream<char>& in) {
-  return 0;
+  std::vector<HandBid> hands = parse_input(in);
+  rank_hands(hands, /* with_joker= */ true);
+
+  int solution = 0;
+  for (int i = 0; i < hands.size(); i++) {
+    int rank = i + 1;
+    int prev = solution;
+    solution += hands[i].bid * rank;
+    assert(solution > prev);
+  }
+  return solution;
 }
 
 }  // namespace day07
