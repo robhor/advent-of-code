@@ -27,7 +27,7 @@ TEST(day09, Part1) {
 
 TEST(day09, Part2) {
   std::istringstream iss(example_input);
-  EXPECT_EQ(AOC::day09::part2(iss), 0);
+  EXPECT_EQ(AOC::day09::part2(iss), 2);
 }
 
 }  // namespace

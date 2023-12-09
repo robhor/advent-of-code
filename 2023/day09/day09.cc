@@ -57,6 +57,14 @@ int extrapolate(const History& history) {
   return history.back() + increment;
 }
 
+int extrapolate_front(const History& history) {
+  if (std::all_of(history.begin(), history.end(), [](int n){return n == 0;})) {
+    return 0;
+  }
+  int decrement = extrapolate_front(differences(history));
+  return history.front() - decrement;
+}
+
 int64_t part1(std::basic_istream<char>& in) {
   Histories input = parse_input(in);
   int sum = 0;
@@ -68,7 +76,11 @@ int64_t part1(std::basic_istream<char>& in) {
 
 int64_t part2(std::basic_istream<char>& in) {
   Histories input = parse_input(in);
-  return 0;
+  int sum = 0;
+  for (const History& history : input) {
+    sum += extrapolate_front(history);
+  }
+  return sum;
 }
 
 }  // namespace day09
