@@ -1,0 +1,7 @@
+load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
+
+http_archive(
+  name = "range-v3",
+  urls = ["https://github.com/ericniebler/range-v3/archive/97452bb3eb74a73fc86504421a6a27c92bce6b99.zip"],
+  strip_prefix = "range-v3-97452bb3eb74a73fc86504421a6a27c92bce6b99",
+)

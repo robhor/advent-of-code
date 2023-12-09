@@ -15,9 +15,18 @@
 #include "absl/strings/numbers.h"
 #include "absl/strings/str_split.h"
 #include "absl/strings/string_view.h"
+#include "range/v3/view/all.hpp"
+#include "range/v3/view/concat.hpp"
+#include "range/v3/view/filter.hpp"
+#include "range/v3/view/transform.hpp"
+#include "range/v3/numeric/accumulate.hpp"
+
 
 namespace AOC {
 namespace day09 {
+
+using ranges::views::filter;
+using ranges::views::transform;
 
 typedef std::vector<int> History;
 typedef std::vector<History> Histories;
@@ -61,26 +70,23 @@ int extrapolate_front(const History& history) {
   if (std::all_of(history.begin(), history.end(), [](int n){return n == 0;})) {
     return 0;
   }
+
   int decrement = extrapolate_front(differences(history));
   return history.front() - decrement;
 }
 
 int64_t part1(std::basic_istream<char>& in) {
   Histories input = parse_input(in);
-  int sum = 0;
-  for (const History& history : input) {
-    sum += extrapolate(history);
-  }
-  return sum;
+  auto extrapolations = input
+    | transform([](History& history) { return extrapolate(history); });
+  return ranges::accumulate(extrapolations, 0);
 }
 
 int64_t part2(std::basic_istream<char>& in) {
   Histories input = parse_input(in);
-  int sum = 0;
-  for (const History& history : input) {
-    sum += extrapolate_front(history);
-  }
-  return sum;
+  auto extrapolations = input
+    | transform([](History& history) { return extrapolate_front(history); });
+  return ranges::accumulate(extrapolations, 0);
 }
 
 }  // namespace day09

@@ -3,6 +3,7 @@ cc_library(
     hdrs = ["day09.cc"],
     deps = [
         "@abseil-cpp//absl/strings",
+        "@range-v3",
     ],
 )
 
