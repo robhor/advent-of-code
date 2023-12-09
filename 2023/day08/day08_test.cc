@@ -22,6 +22,17 @@ AAA = (BBB, BBB)
 BBB = (AAA, ZZZ)
 ZZZ = (ZZZ, ZZZ))";
 
+std::string example_input_3 = R"(LR
+
+11A = (11B, XXX)
+11B = (XXX, 11Z)
+11Z = (11B, XXX)
+22A = (22B, XXX)
+22B = (22C, 22C)
+22C = (22Z, 22Z)
+22Z = (22B, 22B)
+XXX = (XXX, XXX))";
+
 using namespace AOC::day08;
 
 TEST(day08, Part1) {
@@ -33,8 +44,8 @@ TEST(day08, Part1) {
 }
 
 TEST(day08, Part2) {
-  std::istringstream iss(example_input_1);
-  EXPECT_EQ(AOC::day08::part2(iss), 0);
+  std::istringstream iss(example_input_3);
+  EXPECT_EQ(AOC::day08::part2(iss), 6);
 }
 
 }  // namespace
