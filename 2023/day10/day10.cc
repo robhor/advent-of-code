@@ -79,6 +79,10 @@ struct Map {
     return get(p.x, p.y);
   }
 
+  void set(Vec2 p, char v) {
+    rows[p.y][p.x] = v;
+  }
+
   Vec2 find_starting_position() const {
     for (int y = 0; y < y_size(); y++) {
       for (int x = 0; x < x_size(); x++) {
@@ -184,8 +188,93 @@ int64_t part1(std::basic_istream<char>& in) {
   return mid;
 }
 
+void get_bounds(const std::vector<Vec2>& path, Vec2& out_min, Vec2& out_max) {
+  out_min.x = INT_MAX;
+  out_min.y = INT_MAX;
+  out_max.x = 0;
+  out_max.y = 0;
+
+  for (const Vec2& p : path) {
+    out_min.x = std::min(out_min.x, p.x);
+    out_min.y = std::min(out_min.y, p.y);
+    out_max.x = std::max(out_max.x, p.x);
+    out_max.y = std::max(out_max.y, p.y);
+  }
+}
+
+char get_tile_type(const std::vector<Vec2>& path, Vec2 pos) {
+  Vec2 start = path[0];
+  Vec2 after = path[1];
+  Vec2 before = path.back();
+
+  // F-7
+  // |.|
+  // L-J
+
+  Vec2 min, max;
+  get_bounds(std::vector<Vec2>{before, start, after}, min, max);
+
+  if (after.x == before.x) return '|';
+  if (after.y == before.y) return '-';
+  if (start == min) return 'F';
+  if (start == max) return 'J';
+  if (start == Vec2{min.x, max.y}) return 'L';
+  if (start == Vec2{max.x, min.y}) return '7';
+  assert(false && "Unknown tile type");
+}
+
+int get_enclosed_spaces(Map map, std::vector<Vec2> path) {
+  Map marked_map = map;
+  for (const Vec2& p : path) {
+    marked_map.set(p, '*');
+  }
+
+  Vec2 starting_pos = map.find_starting_position();
+  map.set(starting_pos, get_tile_type(path, starting_pos));
+
+  Vec2 min, max;
+  get_bounds(path, min, max);
+
+  int count = 0;
+  for (int y = min.y; y <= max.y; y++) {
+    for (int x = min.x; x <= max.x; x++) {
+      if (marked_map.get(x,y) == '*') continue;
+      int walls = 0;
+      for (int xe = x + 1; xe <= max.x; xe++) {
+        if (marked_map.get(xe, y) == '*') {
+          char tile = map.get(xe, y);
+          if (tile == '|') {
+            walls++;
+          } else if (tile == 'F') {
+            xe++;
+            while(map.get(xe,y) == '-') { xe++; }
+            if (map.get(xe, y) == '7') { continue; }
+            if (map.get(xe, y) == 'J') {
+              walls++;
+              continue;
+            }
+          } else if (tile == 'L') {
+            xe++;
+            while(map.get(xe,y) == '-') { xe++; }
+            if (map.get(xe, y) == 'J') { continue; }
+            if (map.get(xe, y) == '7') {
+              walls++;
+              continue;
+            }
+          }
+        }
+      }
+      bool inside = walls % 2 == 1;
+      if (inside) count++;
+    }
+  }
+  return count;
+}
+
 int64_t part2(std::basic_istream<char>& in) {
-  return 0;
+  Map map = parse_input(in);
+  std::vector<Vec2> loop = find_pipe_loop(map);
+  return get_enclosed_spaces(map, loop);
 }
 
 }  // namespace day10
