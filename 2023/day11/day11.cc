@@ -29,8 +29,8 @@ using ranges::views::filter;
 using ranges::views::transform;
 
 struct Vec2 {
-  int x;
-  int y;
+  int64_t x;
+  int64_t y;
 
   static Vec2 UP;
   static Vec2 DOWN;
@@ -96,30 +96,29 @@ Input parse_input(std::basic_istream<char>& in) {
   return result;
 }
 
-std::vector<Vec2> expand_universe(const Input& input) {
+std::vector<Vec2> expand_universe(const Input& input, int expansion_factor = 2) {
   std::vector<Vec2> result = input.galaxies;
   for (int ey : std::views::reverse(input.empty_y)) {
     for (Vec2& v : result) {
-      if (v.y > ey) v.y++;
+      if (v.y > ey) v.y += expansion_factor - 1;
     }
   }
   for (int ex : std::views::reverse(input.empty_x)) {
     for (Vec2& v : result) {
-      if (v.x > ex) v.x++;
+      if (v.x > ex) v.x += expansion_factor - 1;
     }
   }
   return result;
 }
 
-int dist(Vec2 a, Vec2 b) {
+int64_t dist(Vec2 a, Vec2 b) {
   return std::abs(b.x - a.x) + std::abs(b.y - a.y);
 }
 
-int64_t part1(std::basic_istream<char>& in) {
-  Input input = parse_input(in);
-  std::vector<Vec2> expanded = expand_universe(input);
+int64_t calculate_distances(const Input& input, int expansion_factor) {
+  std::vector<Vec2> expanded = expand_universe(input, expansion_factor);
 
-  int sum = 0;
+  int64_t sum = 0;
   for (int i = 0; i < expanded.size(); i++) {
     for (int j = i + 1; j < expanded.size(); j++) {
       sum += dist(expanded[i], expanded[j]);
@@ -128,8 +127,14 @@ int64_t part1(std::basic_istream<char>& in) {
   return sum;
 }
 
+int64_t part1(std::basic_istream<char>& in) {
+  Input input = parse_input(in);
+  return calculate_distances(input, 2);
+}
+
 int64_t part2(std::basic_istream<char>& in) {
-  return 0;
+  Input input = parse_input(in);
+  return calculate_distances(input, 1000000);
 }
 
 }  // namespace day11

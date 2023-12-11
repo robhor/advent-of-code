@@ -54,4 +54,11 @@ TEST(day11, Part1) {
   EXPECT_EQ(AOC::day11::part1(iss), 374);
 }
 
+TEST(day11, Part2) {
+  std::istringstream iss(example_input);
+  Input input = parse_input(iss);
+  EXPECT_EQ(calculate_distances(input, 10), 1030);
+  EXPECT_EQ(calculate_distances(input, 100), 8410);
+}
+
 }  // namespace
