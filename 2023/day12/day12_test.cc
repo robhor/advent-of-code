@@ -34,10 +34,9 @@ TEST(day12, CanPlaceGroupAt) {
 }
 
 TEST(day12, Part1) {
-  std::istringstream iss(example_input);
   EXPECT_EQ(AOC::day12::part1("???.### 1,1,3"), 1);
-  EXPECT_EQ(AOC::day12::part1("?#?#?#?#?#?#?#? 1,3,1,6"), 1);
   EXPECT_EQ(AOC::day12::part1(".??..??...?##. 1,1,3"), 4);
+  EXPECT_EQ(AOC::day12::part1("?#?#?#?#?#?#?#? 1,3,1,6"), 1);
   EXPECT_EQ(AOC::day12::part1("????.#...#... 4,1,1"), 1);
   EXPECT_EQ(AOC::day12::part1("????.######..#####. 1,6,5"), 4);
   EXPECT_EQ(AOC::day12::part1("?###???????? 3,2,1"), 10);
@@ -45,8 +44,13 @@ TEST(day12, Part1) {
 }
 
 TEST(day12, Part2) {
-  std::istringstream iss(example_input);
-  EXPECT_EQ(part2(iss), 0);
+  EXPECT_EQ(AOC::day12::part2("???.### 1,1,3"), 1);
+  EXPECT_EQ(AOC::day12::part2(".??..??...?##. 1,1,3"), 16384);
+  EXPECT_EQ(AOC::day12::part2("?#?#?#?#?#?#?#? 1,3,1,6"), 1);
+  EXPECT_EQ(AOC::day12::part2("????.#...#... 4,1,1"), 16);
+  EXPECT_EQ(AOC::day12::part2("????.######..#####. 1,6,5"), 2500);
+  EXPECT_EQ(AOC::day12::part2("?###???????? 3,2,1"), 506250);
+  EXPECT_EQ(AOC::day12::part2(example_input), 525152);
 }
 
 }  // namespace
