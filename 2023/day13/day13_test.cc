@@ -43,7 +43,7 @@ EXPECT_EQ(part1(R"(#...##..#
 }
 
 TEST(day13, Part2) {
-  EXPECT_EQ(part2(example_input), 0);
+  EXPECT_EQ(part2(example_input), 400);
 }
 
 }  // namespace

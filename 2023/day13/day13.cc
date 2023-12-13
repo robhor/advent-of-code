@@ -47,43 +47,53 @@ std::vector<Input> parse_input(std::basic_istream<char>& in) {
   return result;
 }
 
-bool reflects_vertically_at(const Input& input, int col) {
+bool reflects_vertically_at(const Input& input, int col, int expected_smudges = 0) {
   int width = input[0].size();
+  int smudges = 0;
   for (int j = 0; j < col; j++) {
     int left = col - j - 1;
     int right = col + j;
     if (right >= width) break;
 
     for (int y = 0; y < input.size(); y++) {
-      if (input[y][left] != input[y][right]) return false;
+      if (input[y][left] != input[y][right]) {
+        smudges++;
+        if (smudges > expected_smudges) return false;
+      }
     }
   }
-  return true;
+  return smudges == expected_smudges;
 }
 
-int find_vertical_reflection_line(const Input& input) {
+int find_vertical_reflection_line(const Input& input, int smudges = 0) {
   int width = input[0].size();
   for (int i = 1; i < width; i++) {
-    if (reflects_vertically_at(input, i)) return i;
+    if (reflects_vertically_at(input, i, smudges)) return i;
   }
   return 0;
 }
 
-bool reflects_horizontally_at(const Input& input, int row) {
+bool reflects_horizontally_at(const Input& input, int row, int expected_smudges = 0) {
   int height = input.size();
+  int smudges = 0;
   for (int j = 0; j < row; j++) {
     int top = row - j - 1;
     int bottom = row + j;
     if (bottom >= height) break;
-    if (input[top] != input[bottom]) return false;
+    for (int x = 0; x < input[0].size(); x++) {
+      if (input[top][x] != input[bottom][x]) {
+        smudges++;
+        if (smudges > expected_smudges) return false;
+      }
+    }
   }
-  return true;
+  return smudges == expected_smudges;
 }
 
-int find_horizontal_reflection_line(const Input& input) {
+int find_horizontal_reflection_line(const Input& input, int smudges = 0) {
   int height = input.size();
   for (int i = 1; i < height; i++) {
-    if (reflects_horizontally_at(input, i)) return i;
+    if (reflects_horizontally_at(input, i, smudges)) return i;
   }
   return 0;
 }
@@ -101,7 +111,15 @@ int64_t part1(std::basic_istream<char>& in) {
 }
 
 int64_t part2(std::basic_istream<char>& in) {
-  return 0;
+  std::vector<Input> inputs = parse_input(in);
+  int result = 0;
+  for (const Input& input : inputs) {
+    int input_result = 0;
+    input_result += find_vertical_reflection_line(input, 1);
+    input_result += 100 * find_horizontal_reflection_line(input, 1);
+    result += input_result;
+  }
+  return result;
 }
 
 int64_t part1(std::string in) {
