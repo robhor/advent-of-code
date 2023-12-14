@@ -41,14 +41,22 @@ std::vector<std::string> lines(const std::string& str) {
 }
 
 
-TEST(day14, Part1) {
-  EXPECT_EQ(tilt_north(lines(example_input)), lines(example_input_tilted_north));
+TEST(day14, TiltNorth) {
+  std::vector<std::string> input = lines(example_input);
+  tilt_north(PlatformView(input));
+  EXPECT_EQ(input, lines(example_input_tilted_north));
+}
+
+TEST(day14, Load) {
   EXPECT_EQ(load(lines(example_input_tilted_north)), 136);
+}
+
+TEST(day14, Part1) {
   EXPECT_EQ(part1(example_input), 136);
 }
 
 TEST(day14, Part2) {
-  EXPECT_EQ(part2(example_input), 0);
+  EXPECT_EQ(part2(example_input), 64);
 }
 
 }  // namespace

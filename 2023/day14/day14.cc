@@ -39,12 +39,59 @@ std::vector<std::string> parse_input(std::basic_istream<char>& in) {
   return result;
 }
 
-std::vector<std::string> tilt_north(const std::vector<std::string>& input) {
-  std::vector<std::string> result = input;
-  for (int x = 0; x < input[0].size(); x++) {
+struct PlatformView {
+  int rotation = 0;
+  std::vector<std::string>& input;
+
+  PlatformView(std::vector<std::string>& input) : input(input) {}
+  PlatformView(const PlatformView& input) : rotation(input.rotation), input(input.input) {}
+
+  int width() const {
+    if (rotation == 1 || rotation == 2) {
+      return input.size();
+    }
+    return input[0].size();
+  }
+
+  int height() const {
+    if (rotation == 1 || rotation == 2) {
+      return input[0].size();
+    }
+    return input.size();
+  }
+
+  int getX(int x, int y) const {
+    if (rotation == 0) return x;
+    if (rotation == 1) return y;
+    if (rotation == 2) return input[0].size() - 1 - x;
+    if (rotation == 3) return input[0].size() - 1 - y;
+  }
+
+  int getY(int x, int y) const {
+    if (rotation == 0) return y;
+    if (rotation == 1) return input.size() - 1 - x;
+    if (rotation == 2) return input.size() - 1 - y;
+    if (rotation == 3) return x;
+  }
+
+  char get(int x, int y) const {
+    return input[getY(x, y)][getX(x, y)];
+  }
+
+  void set(int x, int y, char c) {
+    input[getY(x, y)][getX(x, y)] = c;
+  }
+
+  void rotate_right() {
+    rotation = (rotation + 1) % 4;
+  }
+};
+
+void tilt_north(PlatformView input) {
+  for (int x = 0; x < input.width(); x++) {
     int last_base = -1;
-    for (int y = 0; y < input.size(); y++) {
-      char here = result[y][x];
+    for (int y = 0; y < input.height(); y++) {
+      char here = input.get(x, y);
       if (here == '.') continue;
       if (here == '#') {
         last_base = y;
@@ -53,14 +100,13 @@ std::vector<std::string> tilt_north(const std::vector<std::string>& input) {
       if (here == 'O') {
         int target = last_base + 1;
         last_base = target;
-        result[target][x] = 'O';
+        input.set(x, target, 'O');
         if (y != target) {
-          result[y][x] = '.';
+          input.set(x, y, '.');
         }
       }
     }
   }
-  return result;
 }
 
 int load(const std::vector<std::string>& input) {
@@ -76,11 +122,41 @@ int load(const std::vector<std::string>& input) {
 }
 
 int64_t part1(std::basic_istream<char>& in) {
-  return load(tilt_north(parse_input(in)));
+  std::vector<std::string> input = parse_input(in);
+  tilt_north(PlatformView(input));
+  return load(input);
+}
+
+int64_t hashof(const std::vector<std::string>& input) {
+  int64_t hash = 0;
+  for (const auto& line : input) {
+    hash ^= std::hash<std::string>{}(line);
+  }
+  return hash;
 }
 
 int64_t part2(std::basic_istream<char>& in) {
-  return 0;
+  std::vector<std::string> input = parse_input(in);
+  PlatformView platform(input);
+
+  std::unordered_map<int64_t, int64_t> seen_at;
+  int64_t cycles = 1000000000;
+  for (int64_t i = 0; i < cycles; i++) {
+    for (int j = 0; j < 4; j++) {
+      tilt_north(platform);
+      platform.rotate_right();
+    }
+    int64_t hash = hashof(input);
+    if (seen_at.contains(hash)) {
+      int64_t last_seen = seen_at[hash];
+      int64_t cycles_since_last_seen = i - last_seen;
+      while (i + cycles_since_last_seen < cycles-1) {
+        i += cycles_since_last_seen;
+      }
+    }
+    seen_at[hash] = i;
+  }
+  return load(input);
 }
 
 int64_t part1(std::string in) {
