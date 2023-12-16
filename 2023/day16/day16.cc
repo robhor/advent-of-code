@@ -65,6 +65,12 @@ struct Level {
   std::vector<std::vector<int>> map;
   int visited = 0;
 
+  Level() = default;
+  Level(const Level& level) {
+    map = level.map;
+    visited = level.visited;
+  }
+
   bool is_valid(const Position& p) {
     if (p.x < 0) return false;
     if (p.y < 0) return false;
@@ -157,8 +163,36 @@ int64_t part1(std::basic_istream<char>& in) {
   return level.trace_beam(Position{0, 0, VISITED_E});
 }
 
+std::vector<Position> get_starting_positions(const Level& level) {
+  std::vector<Position> result;
+  int width = level.map[0].size();
+  int height = level.map.size();
+  for (int x = 0; x < width; x++) {
+    // top row
+    result.push_back(Position {x, 0, VISITED_S});
+    // bottom row
+    result.push_back(Position {x, height-1, VISITED_N});
+  }
+  for (int y = 0; y < height; y++) {
+    // left col
+    result.push_back(Position {0, y, VISITED_E});
+    // right col
+    result.push_back(Position {width-1, y, VISITED_W});
+  }
+  return result;
+}
+
 int64_t part2(std::basic_istream<char>& in) {
-  return 0;
+  Level level = parse_input(in);
+  std::vector<Position> starting_positions = get_starting_positions(level);
+  
+  int result = 0;
+  for (const Position& starting_pos : starting_positions) {
+    Level level_copy = level;
+    int energized = level_copy.trace_beam(starting_pos);
+    result = std::max(result, energized);
+  }
+  return result;
 }
 
 int64_t part1(std::string in) {
