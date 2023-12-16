@@ -54,8 +54,79 @@ int64_t part1(std::basic_istream<char>& in) {
   return result;
 }
 
+struct Instruction {
+  absl::string_view label;
+  char command;
+  int lens {0};
+};
+
+struct Lens {
+  absl::string_view label;
+  int lens;
+};
+
+struct Box {
+  std::vector<Lens> lenses;
+};
+
+std::vector<Instruction> parse_input2(const std::string& in) {
+  std::vector<absl::string_view> parts = absl::StrSplit(in, ",");
+  return parts | transform([](const absl::string_view& part) {
+    int op_idx = -1;
+    for (int i = 1; i < part.size(); i++) {
+      if (part[i] == '-' || part[i] == '=') {
+        op_idx = i;
+        break;
+      }
+    }
+    char op = part[op_idx];
+    absl::string_view label = part.substr(0, op_idx);
+    int lens = 0;
+    absl::SimpleAtoi(part.substr(op_idx + 1), &lens);
+    return Instruction {label, op, lens};
+  }) | ranges::to<std::vector>();
+}
+
 int64_t part2(std::basic_istream<char>& in) {
-  return 0;
+  std::string line;
+  std::getline(in, line);
+  std::vector<Instruction> instructions = parse_input2(line);
+  std::array<Box, 256> boxes;
+
+  for (const Instruction& instruction : instructions) {
+    Box& box = boxes[hash(instruction.label)];
+    std::vector<Lens>::iterator it = box.lenses.begin();
+    while (it < box.lenses.end()) {
+      if ((*it).label == instruction.label) {
+        if (instruction.command == '=') {
+          (*it).lens = instruction.lens;
+        } else {
+          box.lenses.erase(it);
+        }
+        break;
+      }
+      it++;
+    }
+    if (it == box.lenses.end()) {
+      if (instruction.command == '=') {
+        box.lenses.push_back(Lens { instruction.label, instruction.lens });
+      }
+    }
+  }
+
+  int64_t result = 0;
+  for (int i = 0; i < boxes.size(); i++) {
+    const Box& box = boxes[i];
+    for (int j = 0; j < box.lenses.size(); j++) {
+      int64_t focusing_power = 1;
+      focusing_power *= (i + 1);
+      focusing_power *= (j + 1);
+      focusing_power *= box.lenses[j].lens;
+      result += focusing_power;
+    }
+  }
+
+  return result;
 }
 
 int64_t part1(std::string in) {
