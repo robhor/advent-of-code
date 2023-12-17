@@ -27,7 +27,15 @@ TEST(day17, Part1) {
 }
 
 TEST(day17, Part2) {
-  EXPECT_EQ(part2(example_input), 0);
+  EXPECT_EQ(part2(example_input), 94);
+}
+
+TEST(day17, Part2_2) {
+  EXPECT_EQ(part2(R"(111111111111
+999999999991
+999999999991
+999999999991
+999999999991)"), 71);
 }
 
 }  // namespace

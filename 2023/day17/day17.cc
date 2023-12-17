@@ -92,6 +92,11 @@ struct Node {
   auto operator<=>(const Node&) const = default;
 };
 
+struct CartProps {
+  int min_move = 1;
+  int max_move = 3;
+};
+
 Map parse_input(std::basic_istream<char>& in) {
   std::vector<std::vector<int>> result;
   std::string line;
@@ -126,31 +131,27 @@ bool in_bounds(const Map& map, const Vec2& pos) {
   return true;
 }
 
-std::vector<Node> neighbors(const Map& map, const Node& node) {
+std::vector<Node> neighbors(const Map& map, const Node& node, const CartProps& cart) {
   std::vector<Node> neighbors;
   Vec2 pos = node.position;
   if (node.heading == HEADING_WEST || node.heading == HEADING_EAST) {
-    neighbors.push_back(Node { pos + Vec2::UP, HEADING_NORTH });;
-    neighbors.push_back(Node { pos + Vec2::UP * 2, HEADING_NORTH });;
-    neighbors.push_back(Node { pos + Vec2::UP * 3, HEADING_NORTH });;
-  }
-
-  if (node.heading == HEADING_NORTH || node.heading == HEADING_SOUTH || node.heading == HEADING_UNDEFINED) {
-    neighbors.push_back(Node { pos + Vec2::LEFT, HEADING_WEST });;
-    neighbors.push_back(Node { pos + Vec2::LEFT * 2, HEADING_WEST });;
-    neighbors.push_back(Node { pos + Vec2::LEFT * 3, HEADING_WEST });;
-  }
-
-  if (node.heading == HEADING_WEST || node.heading == HEADING_EAST || node.heading == HEADING_UNDEFINED) {
-    neighbors.push_back(Node { pos + Vec2::DOWN, HEADING_SOUTH });;
-    neighbors.push_back(Node { pos + Vec2::DOWN * 2, HEADING_SOUTH });;
-    neighbors.push_back(Node { pos + Vec2::DOWN * 3, HEADING_SOUTH });;
+    for (int i = cart.min_move; i <= cart.max_move; i++)
+      neighbors.push_back(Node { pos + Vec2::UP * i, HEADING_NORTH });
   }
 
   if (node.heading == HEADING_NORTH || node.heading == HEADING_SOUTH) {
-    neighbors.push_back(Node { pos + Vec2::RIGHT, HEADING_EAST });;
-    neighbors.push_back(Node { pos + Vec2::RIGHT * 2, HEADING_EAST });;
-    neighbors.push_back(Node { pos + Vec2::RIGHT * 3, HEADING_EAST });;
+    for (int i = cart.min_move; i <= cart.max_move; i++)
+      neighbors.push_back(Node { pos + Vec2::LEFT * i, HEADING_WEST });
+  }
+
+  if (node.heading == HEADING_WEST || node.heading == HEADING_EAST || node.heading == HEADING_UNDEFINED) {
+    for (int i = cart.min_move; i <= cart.max_move; i++)
+      neighbors.push_back(Node { pos + Vec2::DOWN * i, HEADING_SOUTH });
+  }
+
+  if (node.heading == HEADING_NORTH || node.heading == HEADING_SOUTH || node.heading == HEADING_UNDEFINED) {
+    for (int i = cart.min_move; i <= cart.max_move; i++)
+      neighbors.push_back(Node { pos + Vec2::RIGHT * i, HEADING_EAST });
   }
 
   return neighbors | filter([&map](const Node& n) { return in_bounds(map, n.position); }) | ranges::to<std::vector>();
@@ -166,7 +167,7 @@ int cost(const Map& map, Vec2 pos_start, Vec2 pos_end) {
   return cost;
 }
 
-int dijkstra(const Map& map) {
+int dijkstra(const Map& map, const CartProps& cart) {
   Vec2 goal = Vec2 { (int) (map[0].size() - 1), (int) (map.size() - 1) };
   std::unordered_map<Node, Node, NodeHasher> came_from;
   std::unordered_map<Node, int, NodeHasher> cost_so_far;
@@ -177,7 +178,6 @@ int dijkstra(const Map& map) {
   Node start { Vec2::ZERO, HEADING_UNDEFINED };
   frontier.push(start);
 
-  
   cost_so_far[start] = 0;
 
   while (!frontier.empty()) {
@@ -187,7 +187,7 @@ int dijkstra(const Map& map) {
     }
     frontier.pop();
 
-    for (Node next : neighbors(map, current)) {
+    for (Node next : neighbors(map, current, cart)) {
       int new_cost = cost_so_far[current] + cost(map, current.position, next.position);
       if (!cost_so_far.contains(next) || new_cost < cost_so_far[next]) {
           cost_so_far[next] = new_cost;
@@ -200,41 +200,17 @@ int dijkstra(const Map& map) {
   Node yay = frontier.top();
   int shortest_path_cost = cost_so_far[yay];
 
-  std::vector<Vec2> path;
-  {
-    // reconstruct path
-    Node current = yay;
-    while (current.position != start.position) {
-      path.push_back(current.position);
-      current = came_from[current];
-    }
-    path.push_back(start.position);
-  }
-
-  {
-    // calculate path cost
-    int costt = 0;
-    Vec2 current = path.back();
-    for (int i = path.size() - 2; i >= 0; i--) {
-      Vec2 next = path[i];
-      costt += cost(map, current, next);
-      current = next;
-    }
-    std::cout << "Min path cost: " << costt << std::endl;
-  }
-
-  std::cout << "Min path: " << ranges::views::all(path) << std::endl;
-
   return shortest_path_cost;
 }
 
 int64_t part1(std::basic_istream<char>& in) {
   Map map = parse_input(in);
-  return dijkstra(map);
+  return dijkstra(map, CartProps {1, 3});
 }
 
 int64_t part2(std::basic_istream<char>& in) {
-  return 0;
+  Map map = parse_input(in);
+  return dijkstra(map, CartProps {4, 10});
 }
 
 int64_t part1(std::string in) {
