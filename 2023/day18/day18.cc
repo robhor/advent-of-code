@@ -69,15 +69,6 @@ Vec2 Vec2::DOWN = Vec2{0, 1};
 Vec2 Vec2::LEFT = Vec2{-1, 0};
 Vec2 Vec2::RIGHT = Vec2{1, 0};
 
-struct Vec2Hasher {
-  std::size_t operator()(const Vec2& s) const {
-    std::size_t h1 = s.x;
-    std::size_t h2 = s.y;
-    return h1 ^ (h2 << 1);
-  }
-};
-
-
 std::ostream& operator<<(std::ostream& os, const Vec2& vec) {
   os << "{";
   os << vec.x << " , ";
@@ -89,7 +80,7 @@ std::ostream& operator<<(std::ostream& os, const Vec2& vec) {
 struct DigInstruction {
   Vec2 direction;
   int distance;
-  int color;
+  std::string color_hex;
 };
 
 std::vector<DigInstruction> parse_input(std::basic_istream<char>& in) {
@@ -116,25 +107,10 @@ std::vector<DigInstruction> parse_input(std::basic_istream<char>& in) {
     }
 
     assert(absl::SimpleAtoi(parts[1], &instruction.distance));
-    assert(absl::SimpleHexAtoi(parts[2].substr(2, 6), &instruction.color));
+    instruction.color_hex = parts[2].substr(2, 6);
     result.push_back(instruction);
   }
   return result;
-}
-
-std::unordered_map<Vec2, bool, Vec2Hasher> run_dig_instructions(std::vector<DigInstruction> instructions) {
-  std::unordered_map<Vec2, bool, Vec2Hasher> dug_out;
-  Vec2 current = Vec2::ZERO;
-  dug_out[current] = true;
-
-  for (const auto& instruction : instructions) {
-    for (int i = 1; i <= instruction.distance; i++) {
-      current = current + instruction.direction;
-      dug_out[current] = true;
-    }
-  }
-
-  return dug_out;
 }
 
 std::vector<Vec2> dig_instructions_to_vertices(const std::vector<DigInstruction>& instructions) {
@@ -150,28 +126,29 @@ std::vector<Vec2> dig_instructions_to_vertices(const std::vector<DigInstruction>
   return vertices;
 }
 
-int64_t area_of_polygon(const std::vector<DigInstruction>& instructions) {
+uint64_t area_of_polygon(const std::vector<DigInstruction>& instructions) {
   // shoelace formula
   std::vector<Vec2> vertices = dig_instructions_to_vertices(instructions);
-  int64_t sum = 0;
+  uint64_t sum = 0;
   int n = vertices.size();
 
-  auto x = [&vertices](int i) { return vertices[i].x; };
-  auto y = [&vertices](int i) { return vertices[i].y; };
+  auto x = [&vertices](int i) { return (uint64_t) vertices[i].x; };
+  auto y = [&vertices](int i) { return (uint64_t) vertices[i].y; };
 
   for (int i = 0; i < n; i++) {
     sum += x(i) * y((i + 1) % n);
     sum -= x((i + 1) % n) * y(i);
   }
 
-  const int64_t inner_area = sum/2;
+  const uint64_t inner_area = sum/2LL;
+  assert(inner_area > 0);
 
-  int64_t outline_length = 0;
+  uint64_t outline_length = 0;
   for (const auto& i : instructions) {
     outline_length += i.distance;
   }
 
-  return inner_area + outline_length/2 + 1;
+  return inner_area + outline_length/2LL + 1LL;
 }
 
 int64_t part1(std::basic_istream<char>& in) {
@@ -179,8 +156,36 @@ int64_t part1(std::basic_istream<char>& in) {
   return area_of_polygon(instructions);
 }
 
+std::vector<DigInstruction> decode_color_instructions(const std::vector<DigInstruction>& instructions) {
+  std::vector<DigInstruction> result;
+  for (const auto& instruction : instructions) {
+    DigInstruction decoded;
+    assert(absl::SimpleHexAtoi(instruction.color_hex.substr(0, 5), &decoded.distance));
+    switch (instruction.color_hex[5]) {
+    case '0':
+      decoded.direction = Vec2::RIGHT;
+      break;
+    case '1':
+      decoded.direction = Vec2::DOWN;
+      break;
+    case '2':
+      decoded.direction = Vec2::LEFT;
+      break;
+    case '3':
+      decoded.direction = Vec2::UP;
+      break;
+    default:
+      assert(false && "Invalid direction code");
+    }
+    result.push_back(decoded);
+  }
+  return result;
+}
+
 int64_t part2(std::basic_istream<char>& in) {
-  return 0;
+  std::vector<DigInstruction> instructions = parse_input(in);
+  std::vector<DigInstruction> decoded_instructions = decode_color_instructions(instructions);
+  return area_of_polygon(decoded_instructions);
 }
 
 int64_t part1(std::string in) {
