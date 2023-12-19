@@ -33,6 +33,7 @@ using ranges::views::transform;
 
 const int ACCEPT = -1;
 const int REJECT = -2;
+const int MAX_CATEGORY_VALUE = 4000;
 
 struct Condition {
   char category;
@@ -291,7 +292,132 @@ int64_t part1(std::basic_istream<char>& in) {
   return sum;
 }
 
-int64_t part2(std::basic_istream<char>& in) { return 0; }
+struct Range {
+  int start = 1;
+  int length = MAX_CATEGORY_VALUE;
+
+  Range() = default;
+  Range(int start, int length) : start(start), length(length) {};
+  Range(const Range &other) {
+    start = other.start;
+    length = other.length;
+  }
+
+  static Range ZERO;
+
+  int end() const { return start + length - 1; }
+
+  int64_t count() const {
+    return length;
+  }
+
+  Range range_less_than(int limit) {
+    if (end() < limit) return *this;
+    if (limit < start) return Range::ZERO;
+    return Range(start, limit - start);
+  }
+
+  Range range_greater_than(int limit) {
+    if (start > limit) return *this;
+    if (limit > end()) return Range::ZERO;
+    return Range(limit + 1, end() - limit);
+  }
+};
+
+Range Range::ZERO = Range { 0, 0 };
+
+struct PartRange {
+  Range x;
+  Range m;
+  Range a;
+  Range s;
+
+  PartRange() = default;
+  PartRange(Range x, Range m, Range a, Range s): x(x), m(m), a(a), s(s) {}
+  PartRange(const PartRange &other) {
+    x = other.x;
+    m = other.m;
+    a = other.a;
+    s = other.s;
+  }
+
+  int64_t count() const {
+    return x.count() * m.count() * a.count() * s.count();
+  }
+
+  PartRange subset_matching_condition(const Condition& condition) {
+    if (condition.op == '_') return *this;
+    if (condition.op == '<') {
+      switch (condition.category) {
+      case 'x': return PartRange { x.range_less_than(condition.operand), m, a, s };
+      case 'm': return PartRange { x, m.range_less_than(condition.operand), a, s };
+      case 'a': return PartRange { x, m, a.range_less_than(condition.operand), s };
+      case 's': return PartRange { x, m, a, s.range_less_than(condition.operand) };
+      }
+    }
+    if (condition.op == '>') {
+      switch (condition.category) {
+      case 'x': return PartRange { x.range_greater_than(condition.operand), m, a, s };
+      case 'm': return PartRange { x, m.range_greater_than(condition.operand), a, s };
+      case 'a': return PartRange { x, m, a.range_greater_than(condition.operand), s };
+      case 's': return PartRange { x, m, a, s.range_greater_than(condition.operand) };
+      }
+    }
+  }
+
+  PartRange subset_not_matching_condition(const Condition& condition) {
+    if (condition.op == '_') return PartRange { Range::ZERO, Range::ZERO, Range::ZERO, Range::ZERO };
+    if (condition.op == '<') {
+      switch (condition.category) {
+      case 'x': return PartRange { x.range_greater_than(condition.operand - 1), m, a, s };
+      case 'm': return PartRange { x, m.range_greater_than(condition.operand - 1), a, s };
+      case 'a': return PartRange { x, m, a.range_greater_than(condition.operand - 1), s };
+      case 's': return PartRange { x, m, a, s.range_greater_than(condition.operand - 1) };
+      }
+    }
+    if (condition.op == '>') {
+      switch (condition.category) {
+      case 'x': return PartRange { x.range_less_than(condition.operand + 1), m, a, s };
+      case 'm': return PartRange { x, m.range_less_than(condition.operand + 1), a, s };
+      case 'a': return PartRange { x, m, a.range_less_than(condition.operand + 1), s };
+      case 's': return PartRange { x, m, a, s.range_less_than(condition.operand + 1) };
+      }
+    }
+  }
+};
+
+int64_t accepted_combinations(const IndexedWorkflows& wfs, int wfi, PartRange range) {
+  if (range.count() == 0) return 0;
+
+  const IndexedWorkflow* wf = &wfs.workflows[wfi];
+  PartRange remaining_range = range;
+  int64_t result = 0;
+  for (const IndexedRule& rule : *wf) {
+    PartRange subrange = remaining_range.subset_matching_condition(rule.condition);
+    remaining_range = remaining_range.subset_not_matching_condition(rule.condition);
+
+    if (rule.destination == REJECT) {
+      continue;
+    } else if (rule.destination == ACCEPT) {
+      result += subrange.count();
+    } else {
+      result += accepted_combinations(wfs, rule.destination, subrange);
+    }
+  }
+
+  return result;
+}
+
+int64_t accepted_combinations(const IndexedWorkflows& wfs) {
+  PartRange part_range;
+  return accepted_combinations(wfs, wfs.in_workflow, part_range);
+}
+
+int64_t part2(std::basic_istream<char>& in) {
+  Input input = parse_input(in);
+  IndexedWorkflows workflows = index_workflows(input.workflows);
+  return accepted_combinations(workflows);
+}
 
 int64_t part1(std::string in) {
   std::istringstream iss(in);
