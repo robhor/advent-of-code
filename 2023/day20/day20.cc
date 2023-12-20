@@ -117,9 +117,12 @@ void update_destination_state(IndexedModules& modules,
   const int module_idx = pulse.dst;
   const Module& module = modules.modules[module_idx];
 
-  if (module.type == MODULE_TYPE_FLIP_FLOP) {
+  if (module.type == MODULE_TYPE_BROADCASTER) {
+    int64_t& state = states[module_idx];
+    state++;
+  } else if (module.type == MODULE_TYPE_FLIP_FLOP) {
     if (pulse.type == PULSE_HIGH) {
-    // Flip-Flops do nothing on a high pulse
+      // Flip-Flops do nothing on a high pulse
       return;
     }
 
@@ -163,7 +166,6 @@ std::vector<Pulse> process_pulse(IndexedModules& modules,
       int out_idx = modules.name_to_index[out];
       Pulse new_pulse =
           Pulse{.src = module_idx, .dst = out_idx, .type = pulse.type};
-      // update_destination_state(modules, states, new_pulse);
       new_pulses.push_back(new_pulse);
     }
     return new_pulses;
@@ -182,7 +184,6 @@ std::vector<Pulse> process_pulse(IndexedModules& modules,
         int out_idx = modules.name_to_index[out];
         Pulse new_pulse =
             Pulse{.src = module_idx, .dst = out_idx, .type = new_pulse_type};
-        // update_destination_state(modules, states, new_pulse);
         new_pulses.push_back(new_pulse);
       }
       return new_pulses;
@@ -194,12 +195,18 @@ std::vector<Pulse> process_pulse(IndexedModules& modules,
     bool all_high = (state & all_inputs_mask) == all_inputs_mask;
     int new_pulse_type = all_high ? PULSE_LOW : PULSE_HIGH;
 
+    // store sent out pulse in state..
+    if (new_pulse_type == PULSE_HIGH) {
+      state |= (1LL << module_idx);
+    } else {
+      state &= ~(1LL << module_idx);
+    }
+
     std::vector<Pulse> new_pulses;
     for (const auto& out : module.outputs) {
       int out_idx = modules.name_to_index[out];
       Pulse new_pulse =
           Pulse{.src = module_idx, .dst = out_idx, .type = new_pulse_type};
-      // update_destination_state(modules, states, new_pulse);
       new_pulses.push_back(new_pulse);
     }
     return new_pulses;
@@ -227,7 +234,8 @@ PulseCount push_button(IndexedModules& modules, std::vector<int64_t>& states) {
       result.high_pulses++;
     }
 
-    std::vector<Pulse> downstream_pulses = process_pulse(modules, states, pulse);
+    std::vector<Pulse> downstream_pulses =
+        process_pulse(modules, states, pulse);
     for (const auto& p : downstream_pulses) {
       queue.push(p);
     }
@@ -251,13 +259,93 @@ int64_t part1(std::basic_istream<char>& in) {
   int button_presses = 1000;
   for (int i = 0; i < button_presses; i++) {
     result += push_button(imodules, state);
-    // printf("------------------\n");
   }
   printf("low: %lld\nhigh: %lld\n", result.low_pulses, result.high_pulses);
   return result.low_pulses * result.high_pulses;
 }
 
-int64_t part2(std::basic_istream<char>& in) { return 0; }
+int64_t part2(std::basic_istream<char>& in) {
+  std::vector<Module> modules = parse_input(in);
+  modules.push_back(Module{.name = MODULE_NAME_BUTTON,
+                           .outputs = {MODULE_NAME_BROADCASTER},
+                           .type = 'b'});
+  modules.insert(modules.begin(),
+                 {Module{.name = "rx", .outputs = {}, .type = 'b'},
+                  Module{.name = "(unknown)", .outputs = {}, .type = 'b'}});
+  assert(modules.size() < 64);
+  std::vector<int64_t> states = std::vector<int64_t>(modules.size(), 0LL);
+  IndexedModules imodules = index_modules(std::move(modules));
+
+  std::vector<Module> modules_sending_to_rx;
+  for (const Module& m : modules) {
+    for (const std::string& out : m.outputs) {
+      if (out == "rx") {
+        modules_sending_to_rx.push_back(m);
+        break;
+      }
+    }
+  }
+
+  assert(modules_sending_to_rx.size() == 1);
+  Module pre_rx_module = modules_sending_to_rx[0];
+
+  std::vector<int> cyclic_modules;
+  for (const Module& m : modules) {
+    for (const std::string& out : m.outputs) {
+      if (out == pre_rx_module.name) {
+        cyclic_modules.push_back(imodules.name_to_index[m.name]);
+        break;
+      }
+    }
+  }
+
+  std::vector<int64_t> cyclic_lengths = std::vector<int64_t>(cyclic_modules.size(), 0);
+
+  int64_t presses = 0LL;
+  while (true) {
+    presses++;
+    std::queue<Pulse> queue;
+    Pulse starting_pulse =
+        Pulse{.src = imodules.name_to_index[MODULE_NAME_BUTTON],
+              .dst = imodules.name_to_index[MODULE_NAME_BROADCASTER],
+              .type = PULSE_LOW};
+    queue.push(starting_pulse);
+
+    while (!queue.empty()) {
+      const Pulse pulse = queue.front();
+      queue.pop();
+
+      std::vector<Pulse> downstream_pulses =
+          process_pulse(imodules, states, pulse);
+
+      if (pulse.type == PULSE_HIGH) {
+        int found_cycles = 0;
+        for (int ci = 0; ci < cyclic_modules.size(); ci++) {
+          if (cyclic_lengths[ci] != 0) {
+            found_cycles++;
+            continue;
+          }
+          if (pulse.src == cyclic_modules[ci]) {
+            cyclic_lengths[ci] = presses;
+            found_cycles++;
+            continue;
+          }
+        }
+        if (found_cycles == cyclic_modules.size()) {
+          int64_t lcm = 1;
+          for (int ci = 0; ci < cyclic_modules.size(); ci++) {
+            lcm = std::lcm(lcm, cyclic_lengths[ci]);
+          }
+          return lcm;
+        }
+      }
+
+      for (const auto& p : downstream_pulses) {
+        queue.push(p);
+      }
+    }
+  }
+}
 
 int64_t part1(std::string in) {
   std::istringstream iss(in);
