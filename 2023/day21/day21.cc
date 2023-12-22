@@ -90,20 +90,32 @@ Vec2 find_starting_pos(const std::vector<std::string>& map) {
   for (int y = 0; y < map.size(); y++) {
     for (int x = 0; x < map[0].size(); x++) {
       if (map[y][x] == 'S') {
-        return Vec2 { x, y };
+        return Vec2{x, y};
       }
     }
   }
   assert(false && "Starting pos not found");
 }
 
-std::set<Vec2> take_a_step(const std::vector<std::string>& map, std::set<Vec2> positions) {
+int mod(int a, int b) { return (b + (a % b)) % b; }
+
+std::set<Vec2> take_a_step(const std::vector<std::string>& map,
+                           std::set<Vec2> positions, bool bounded = true) {
   std::set<Vec2> new_positions;
-  std::vector<Vec2> directions = { Vec2::UP, Vec2::DOWN, Vec2::LEFT, Vec2::RIGHT };
+  std::vector<Vec2> directions = {Vec2::UP, Vec2::DOWN, Vec2::LEFT,
+                                  Vec2::RIGHT};
+  int w = map[0].size();
+  int h = map.size();
   for (Vec2 p : positions) {
     for (Vec2 d : directions) {
       Vec2 new_position = p + d;
-      if (map[new_position.y][new_position.x] != '#') {
+      if (bounded) {
+        if (new_position.x < 0) continue;
+        if (new_position.y < 0) continue;
+        if (new_position.x >= map[0].size()) continue;
+        if (new_position.y >= map.size()) continue;
+      }
+      if (map[mod(new_position.y, h)][mod(new_position.x, w)] != '#') {
         new_positions.insert(new_position);
       }
     }
@@ -111,15 +123,26 @@ std::set<Vec2> take_a_step(const std::vector<std::string>& map, std::set<Vec2> p
   return new_positions;
 }
 
-std::set<Vec2> take_a_walk(const std::vector<std::string>& map, int steps) {
+std::set<Vec2> take_a_walk(const std::vector<std::string>& map, int steps,
+                           Vec2 start, bool bounded = true) {
   std::set<Vec2> end_positions;
-  end_positions.insert(find_starting_pos(map));
+  end_positions.insert(start);
 
   for (int step = 0; step < steps; step++) {
-    end_positions = take_a_step(map, end_positions);
+    end_positions = take_a_step(map, end_positions, bounded);
   }
 
   return end_positions;
+}
+
+std::set<Vec2> take_a_walk(const std::vector<std::string>& map, int steps) {
+  Vec2 start = find_starting_pos(map);
+  return take_a_walk(map, steps, start);
+}
+
+int64_t end_positions_in_a_walk(const std::vector<std::string>& map, int steps,
+                                Vec2 start) {
+  return take_a_walk(map, steps, start).size();
 }
 
 int64_t part1(std::basic_istream<char>& in, int steps = 64) {
@@ -128,7 +151,61 @@ int64_t part1(std::basic_istream<char>& in, int steps = 64) {
 }
 
 int64_t part2(std::basic_istream<char>& in) {
-  return 0;
+  // This only works because of the special structure of the input
+  std::vector<std::string> map = parse_input(in);
+
+  int h = map.size();
+  int w = h;
+  Vec2 start = find_starting_pos(map);
+
+  assert(start.x == (w - 1) / 2);
+  assert(start.y == (h - 1) / 2);
+
+  int64_t D = 26501365LL;
+  int64_t N = (D - start.x) / w;
+  int64_t rem = D - N * w;
+  printf("w=%d, h=%d\n", w, h);
+  printf("D=%lld\n", D);
+  printf("start.x=%d\n", start.x);
+  printf("N=%lld\n", N);
+  assert(N == 202300);
+
+  int64_t E = end_positions_in_a_walk(map, 3 * w + 1, start);
+  int64_t O = end_positions_in_a_walk(map, 3 * w, start);
+
+  int64_t sA = w + rem - 1;
+  int64_t A1 = end_positions_in_a_walk(map, sA, Vec2{w - 1, h - 1});
+  int64_t A2 = end_positions_in_a_walk(map, sA, Vec2{0, h - 1});
+  int64_t A3 = end_positions_in_a_walk(map, sA, Vec2::ZERO);
+  int64_t A4 = end_positions_in_a_walk(map, sA, Vec2{w - 1, 0});
+  int64_t A = A1 + A2 + A3 + A4;
+
+  int64_t sB = rem - 1;
+  int64_t B1 = end_positions_in_a_walk(map, sB, Vec2{w - 1, h - 1});
+  int64_t B2 = end_positions_in_a_walk(map, sB, Vec2{0, h - 1});
+  int64_t B3 = end_positions_in_a_walk(map, sB, Vec2::ZERO);
+  int64_t B4 = end_positions_in_a_walk(map, sB, Vec2{w - 1, 0});
+  int64_t B = B1 + B2 + B3 + B4;
+
+  int64_t sT = w - 1;
+  int64_t T1 = end_positions_in_a_walk(map, sT, Vec2{w - 1, start.y});
+  int64_t T2 = end_positions_in_a_walk(map, sT, Vec2{start.x, h - 1});
+  int64_t T3 = end_positions_in_a_walk(map, sT, Vec2{0, start.y});
+  int64_t T4 = end_positions_in_a_walk(map, sT, Vec2{start.x, 0});
+  int64_t T = T1 + T2 + T3 + T4;
+
+  int64_t reachable_tiles =
+      (N - 1) * (N - 1) * O + N * N * E + (N - 1) * A + N * B + T;
+
+  printf("part2: %lld\n", reachable_tiles);
+  printf("E: %lld\n", E);
+  printf("O: %lld\n", O);
+  printf("A: %lld, A1=%lld, A2=%lld, A3=%lld, A4=%lld\n", A, A1, A2, A3, A4);
+  printf("B: %lld, B1=%lld, B2=%lld, B3=%lld, B4=%lld\n", B, B1, B2, B3, B4);
+  printf("T: %lld, T1=%lld, T2=%lld, T3=%lld, T4=%lld\n", T, T1, T2, T3, T4);
+  // printf("part1: %lld\n", take_a_walk(map, D, start, false).size());
+
+  return reachable_tiles;
 }
 
 int64_t part1(std::string in) {
