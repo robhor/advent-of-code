@@ -190,21 +190,16 @@ std::vector<Block> blocks_rested_on_below(const std::vector<Block>& blocks, cons
 int64_t count_disintegratable(const std::vector<Block>& blocks) {
   int64_t result = 0;
   for (const Block& block : blocks) {
-    std::cout << "Block: " << block << std::endl;
     std::vector<Block> blocks_above = blocks_resting_above(blocks, block);
     int falling_above = 0;
     for (const Block& above : blocks_above) {
-      std::cout << "  Block above: " << above << std::endl;
       const auto above_resting_blocks = blocks_rested_on_below(blocks, above);
-      std::cout << "    This block rests on " << ranges::views::all(above_resting_blocks) << std::endl;
 
       if (blocks_rested_on_below(blocks, above).size() <= 1) {
-        std::cout << "    This block would fall" << above << std::endl;
         falling_above++;
       }
     }
     if (falling_above == 0) {
-      std::cout << "  Can disintegrate " << block << std::endl;
       result++;
     }
   }
@@ -218,11 +213,79 @@ int64_t part1(std::basic_istream<char>& in) {
   // std::cout << ranges::views::all(blocks) << std::endl;
 
   std::vector<Block> fallen_blocks = let_gravity_do_its_thing(blocks);
-  std::cout << ranges::views::all(fallen_blocks) << std::endl;
+  // std::cout << ranges::views::all(fallen_blocks) << std::endl;
   return count_disintegratable(fallen_blocks);
 }
 
-int64_t part2(std::basic_istream<char>& in) { return 0; }
+struct Node {
+  std::vector<int> below;
+  std::vector<int> above;
+};
+
+template <typename T>
+int indexOf(const std::vector<T>& vec, const T& elem) {
+  auto it = std::find(vec.begin(), vec.end(), elem);
+  if (it == vec.end()) return -1;
+  return std::distance(vec.begin(), it);
+}
+
+std::vector<Node> build_graph(const std::vector<Block>& blocks) {
+  std::vector<Node> nodes;
+  for (const Block& block : blocks) {
+    nodes.push_back(Node());
+  }
+
+  for (int i = 0; i < blocks.size(); i++) {
+    const Block& block = blocks[i];
+    Node& node = nodes[i];
+
+    for (const auto& above : blocks_resting_above(blocks, block)) {
+      int j = indexOf(blocks, above);
+      node.above.push_back(j);
+    }
+
+    for (const auto& above : blocks_rested_on_below(blocks, block)) {
+      int j = indexOf(blocks, above);
+      node.below.push_back(j);
+    }
+  }
+
+  return nodes;
+}
+
+int64_t falling_blocks_if_disintegrating(std::vector<Node> graph, int start) {
+  std::queue<int> removal_queue;
+  removal_queue.push(start);
+  int64_t removed = 0;
+  while (!removal_queue.empty()) {
+    int i = removal_queue.front();
+    removal_queue.pop();
+    removed++;
+
+    for (int above : graph[i].above) {
+      std::vector<int>& below = graph[above].below;
+      below.erase(std::remove(below.begin(), below.end(), i), below.end());
+      if (below.empty()) {
+        removal_queue.push(above);
+      }
+    }
+  }
+  return removed - 1;
+}
+
+int64_t part2(std::basic_istream<char>& in) {
+  std::vector<Block> blocks = parse_input(in);
+  std::sort(blocks.begin(), blocks.end(), [](const Block& a, const Block& b){ return a.start.z < b.start.z; });
+  std::vector<Block> fallen_blocks = let_gravity_do_its_thing(blocks);
+  std::vector<Node> graph = build_graph(fallen_blocks);
+
+  int64_t sum = 0;
+  for (int i = 0; i < graph.size(); i++) {
+    sum += falling_blocks_if_disintegrating(graph, i);
+  }
+
+  return sum;
+}
 
 int64_t part1(std::string in) {
   std::istringstream iss(in);

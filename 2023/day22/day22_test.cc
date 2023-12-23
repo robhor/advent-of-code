@@ -20,4 +20,8 @@ TEST(day22, Part1) {
   EXPECT_EQ(part1(example_input), 5);
 }
 
+TEST(day22, Part2) {
+  EXPECT_EQ(part2(example_input), 7);
+}
+
 }  // namespace
