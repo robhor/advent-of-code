@@ -18,8 +18,4 @@ TEST(day24, Part1) {
   EXPECT_EQ(part1(example_input, Range { 7, 27 }), 2);
 }
 
-TEST(day24, Part2) {
-  EXPECT_EQ(part2(example_input), 0);
-}
-
 }  // namespace

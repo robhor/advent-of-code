@@ -190,18 +190,9 @@ int64_t part1(std::basic_istream<char>& in, Range test_range = Range { 200000000
   return result;
 }
 
-int64_t part2(std::basic_istream<char>& in) {
-  return 0;
-}
-
 int64_t part1(std::string in, Range test_range) {
   std::istringstream iss(in);
   return part1(iss, test_range);
-}
-
-int64_t part2(std::string in) {
-  std::istringstream iss(in);
-  return part2(iss);
 }
 
 }  // namespace day24
