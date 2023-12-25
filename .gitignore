@@ -4,3 +4,4 @@ bazel-testlogs
 bazel-advent-of-code
 .vscode
 .DS_Store
+input.txt
